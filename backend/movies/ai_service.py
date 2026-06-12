@@ -4,19 +4,20 @@ from groq import Groq
 from .models import Movie, UserAction
 
 def get_ai_recommendations(user):
-    # ۱. گرفتن تاریخچه کاربر
-    user_actions = UserAction.objects.filter(user=user).order_name_or_id = ('-timestamp')[:10] # ۱۰ فعالیت اخیر
-    
     clicked_movies = []
     searched_queries = []
     
-    for action in user_actions:
-        if action.action_type == 'click' and action.movie:
-            clicked_movies.append(f"{action.movie.title} ({action.movie.genre})")
-        elif action.action_type == 'search' and action.search_query:
-            searched_queries.append(action.search_query)
+    # اصلاح این بخش: اگر کاربر لاگین بود تاریخچه را بکش، در غیر این صورت تاریخچه خالی است
+    if user and user.is_authenticated:
+        user_actions = UserAction.objects.filter(user=user).order_by('-timestamp')[:10]
+        
+        for action in user_actions:
+            if action.action_type == 'click' and action.movie:
+                clicked_movies.append(f"{action.movie.title} ({action.movie.genre})")
+            elif action.action_type == 'search' and action.search_query:
+                searched_queries.append(action.search_query)
 
-    # ۲. گرفتن تمام فیلم‌های موجود در سایت ما
+    # گرفتن تمام فیلم‌های موجود در سایت ما
     all_site_movies = Movie.objects.all()
     movies_list_for_ai = []
     for m in all_site_movies:
@@ -27,13 +28,13 @@ def get_ai_recommendations(user):
             "plot": m.plot
         })
 
-    # اگر کاربر هیچ تاریخچه‌ای نداشت، فیلم‌های رندوم یا تاپ رو پیشنهاد بده
+    # تنظیم پروفایل کاربر برای هوش مصنوعی
     if not clicked_movies and not searched_queries:
-        # برای سادگی، فعلا لیست خالی می‌فرستیم تا ال‌ال‌ام خودش بر اساس جذابیت فیلم‌های ما انتخاب کنه
-        user_profile = "New user with no history yet. Suggest the best entry movies."
+        user_profile = "New user or Guest with no history yet. Suggest 3 great entry movies from the list."
     else:
         user_profile = f"Clicked Movies: {', '.join(clicked_movies)}. Searched Terms: {', '.join(searched_queries)}."
 
+    # از اینجا به بعدِ کد (اتصال به Groq و پرامپت) دست نخورده باقی می‌ماند...
     # ۳. اتصال به Groq
     client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
     
