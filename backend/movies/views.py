@@ -70,3 +70,18 @@ def log_click(request, movie_id):
         return Response({'message': f'Click logged for movie: {movie.title}'}, status=status.HTTP_201_CREATED)
     except Movie.DoesNotExist:
         return Response({'error': 'Movie not found'}, status=status.HTTP_404_NOT_FOUND)
+    
+
+
+from .ai_service import get_ai_recommendations
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated]) # فقط کاربرانی که لاگین کردند سابقه دارند
+def recommend_movies(request):
+    recommendations = get_ai_recommendations(request.user)
+    
+    if recommendations is None:
+        return Response({'error': 'Failed to fetch recommendations from AI'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+    # برگرداندن پاسخ نهایی هوش مصنوعی به فرانت‌اَند
+    return Response(recommendations)
