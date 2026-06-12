@@ -12,3 +12,21 @@ class Movie(models.Model):
 
     def __str__(self):
         return f"{self.title} ({self.year})"
+    
+
+from django.contrib.auth.models import User
+
+class UserAction(models.Model):
+    ACTION_TYPES = (
+        ('click', 'Click'),
+        ('search', 'Search'),
+    )
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='actions')
+    movie = models.ForeignKey(Movie, on_delete=models.CASCADE, blank=True, null=True) # اگر کلیک روی فیلم بود
+    search_query = models.CharField(max_length=255, blank=True, null=True) # اگر صرفا سرچ کرده بود
+    action_type = models.CharField(max_length=10, choices=ACTION_TYPES)
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.user.username} - {self.action_type} - {self.timestamp}"
